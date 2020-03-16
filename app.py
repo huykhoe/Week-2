@@ -6,6 +6,9 @@ from collections import deque
 
 app = Flask(__name__)
 
+@app.route('/')
+def index():
+    return render_template('index.html')
 TIKI_URL = 'https://tiki.vn'
 conn = sqlite3.connect('tiki.db')
 cur = conn.cursor()
@@ -119,11 +122,30 @@ def get_all_categories(main_categories):
         print(sub_cats)
         de.extend(sub_cats)
         count += 1
-get_all_categories(main_categories[0:2])
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+
+def get_products(category, save_db=True):
+    name = category.sub_name
+    url = category.sub_url
+    result = []
+
+    try:
+        soup = get_url(sub_url)
+        div_products = soup.findAll('div', {'class':'product-item'})
+        for product in div_products:
+            product_id = div.a['data-id']
+            product_name = div.a['title']
+            product_url = div.a['href']
+            product_parent_id = category.sub_id
+
+            product = Category(product_id, product_name, product_url, product_parent_id)
+            if save_db:
+                product.save_into_db()
+            result.append(product)
+    except Exception as err:
+        print('ERROR BY GET PRODUCTS:', err)
+
+    return result
 
 if __name__ == '__main__':
   app.run(host='127.0.0.1', port=8000, debug=True)
